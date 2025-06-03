@@ -1,0 +1,53 @@
+name: Deploy to GitHub Pages
+
+# Executa no push para a branch 'main'
+on:
+  push:
+    branches:
+      - main # Ou 'master' se essa for sua branch principal
+
+# Permissões necessárias para o GitHub Actions interagir com seu repositório
+# e com o GitHub Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Define um job de "concurrency" para garantir que apenas uma implantação
+# seja executada por vez. Se um novo commit for feito enquanto uma
+# implantação anterior estiver em andamento, a anterior será cancelada.
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  # Job de build e deploy
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }} # Define a URL da página como output
+    runs-on: ubuntu-latest # Usa a última versão do Ubuntu como executor
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4 # Ação para clonar o repositório no ambiente do workflow
+
+      - name: Verify index.html exists # Etapa para verificar se o index.html existe
+        run: |
+          if [ ! -f public/index.html ]; then
+            echo "Erro: O arquivo public/index.html não foi encontrado!"
+            exit 1
+          fi
+          echo "Sucesso: O arquivo public/index.html foi encontrado."
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5 # Ação para configurar o GitHub Pages
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3 # Ação para fazer upload dos artefatos (conteúdo da pasta 'public')
+        with:
+          # Faz upload do conteúdo da pasta 'public'
+          path: './public'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4 # Ação para publicar no GitHub Pages
